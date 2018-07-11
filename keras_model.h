@@ -8,10 +8,16 @@
 
 namespace keras
 {
+
+    enum ImageDataFormat_t {
+      Last,
+      First
+    };
+
 	std::vector<float> read_1d_array(std::ifstream &fin, int cols);
 	void missing_activation_impl(const std::string &act);
-	std::vector< std::vector<float> > conv_single_depth_valid(std::vector< std::vector<float> > const & im, std::vector< std::vector<float> > const & k);
-	std::vector< std::vector<float> > conv_single_depth_same(std::vector< std::vector<float> > const & im, std::vector< std::vector<float> > const & k);
+std::vector< std::vector<float> > conv_single_depth_valid(std::vector< std::vector<float> > const & im, std::vector< std::vector<float> > const & k, bool debug);
+std::vector< std::vector<float> > conv_single_depth_same (std::vector< std::vector<float> > const & im, std::vector< std::vector<float> > const & k, bool debug);
 
 	class DataChunk;
 	class DataChunk2D;
@@ -28,7 +34,8 @@ namespace keras
 }
 
 class keras::DataChunk {
-public:
+ private:
+ public:
   virtual ~DataChunk() {}
   virtual size_t get_data_dim(void) const { return 0; }
   virtual std::vector<float> const & get_1d() const { throw "not implemented"; };
@@ -36,7 +43,7 @@ public:
   virtual void set_data(std::vector<std::vector<std::vector<float> > > const &) {};
   virtual void set_data(std::vector<float> const &) {};
   //virtual unsigned int get_count();
-  virtual void read_from_file(const std::string &fname) {};
+  virtual void read_from_file(const std::string &fname, keras::ImageDataFormat_t image_data_format) {};
   virtual void show_name() = 0;
   virtual void show_values() = 0;
 };
@@ -57,7 +64,8 @@ public:
       std::cout << "Kernel " << i << std::endl;
       for(size_t j = 0; j < data[0].size(); ++j) {
         for(size_t k = 0; k < data[0][0].size(); ++k) {
-          std::cout << data[i][j][k] << " ";
+          // std::cout << data[i][j][k] << " ";
+          printf ("%1.6f ", data[i][j][k]);
         }
         std::cout << std::endl;
       }
@@ -67,7 +75,7 @@ public:
   //  return data.size()*data[0].size()*data[0][0].size();
   //}
 
-  void read_from_file(const std::string &fname);
+  void read_from_file(const std::string &fname, keras::ImageDataFormat_t image_data_format);
   std::vector<std::vector<std::vector<float> > > data; // depth, rows, cols
 
   int m_depth;
@@ -92,19 +100,24 @@ public:
   }
   void show_values() {
     std::cout << "DataChunkFlat values:" << std::endl;
-    for(size_t i = 0; i < f.size(); ++i) std::cout << f[i] << " ";
+    // for(size_t i = 0; i < f.size(); ++i) std::cout << f[i] << " ";
+    for(size_t i = 0; i < f.size(); ++i) {
+      printf ("%1.6f ", f[i]);
+    }
     std::cout << std::endl;
   }
-  void read_from_file(const std::string &fname) {};
+  void read_from_file(const std::string &fname, keras::ImageDataFormat_t image_data_format) {};
   //unsigned int get_count() { return f.size(); }
 };
 
 class keras::Layer {
 public:
+  KerasModel *m_model;
+
   virtual void load_weights(std::ifstream &fin) = 0;
   virtual keras::DataChunk* compute_output(keras::DataChunk*) = 0;
 
-  Layer(std::string name) : m_name(name) {}
+  Layer(KerasModel *model, std::string name) : m_model(model), m_name(name) {}
   virtual ~Layer() {}
 
   virtual unsigned int get_input_rows() const = 0;
@@ -118,7 +131,7 @@ public:
 
 class keras::LayerFlatten : public Layer {
 public:
-  LayerFlatten() : Layer("Flatten") {}
+  LayerFlatten(KerasModel *model) : Layer(model, "Flatten") {}
   void load_weights(std::ifstream &fin) {};
   keras::DataChunk* compute_output(keras::DataChunk*);
 
@@ -130,7 +143,7 @@ public:
 
 class keras::LayerMaxPooling : public Layer {
 public:
-  LayerMaxPooling() : Layer("MaxPooling2D") {};
+  LayerMaxPooling(KerasModel *model) : Layer(model, "MaxPooling2D") {};
 
   void load_weights(std::ifstream &fin);
   keras::DataChunk* compute_output(keras::DataChunk*);
@@ -146,7 +159,7 @@ public:
 
 class keras::LayerActivation : public Layer {
 public:
-  LayerActivation() : Layer("Activation") {}
+  LayerActivation(KerasModel *model) : Layer(model, "Activation") {}
   void load_weights(std::ifstream &fin);
   keras::DataChunk* compute_output(keras::DataChunk*);
 
@@ -159,7 +172,7 @@ public:
 
 class keras::LayerConv2D : public Layer {
 public:
-  LayerConv2D() : Layer("Conv2D") {}
+  LayerConv2D(KerasModel *model) : Layer(model, "Conv2D") {}
 
   void load_weights(std::ifstream &fin);
   keras::DataChunk* compute_output(keras::DataChunk*);
@@ -179,7 +192,7 @@ public:
 
 class keras::LayerDense : public Layer {
 public:
-  LayerDense() : Layer("Dense") {}
+  LayerDense(KerasModel *model) : Layer(model, "Dense") {}
 
   void load_weights(std::ifstream &fin);
   keras::DataChunk* compute_output(keras::DataChunk*);
@@ -196,7 +209,7 @@ public:
 
 class keras::KerasModel {
 public:
-  KerasModel(const std::string &input_fname, bool verbose);
+  KerasModel(const std::string &input_fname, ImageDataFormat_t data_format, bool verbose);
   ~KerasModel();
   std::vector<float> compute_output(keras::DataChunk *dc);
 
@@ -204,7 +217,11 @@ public:
   unsigned int get_input_cols() const { return m_layers.front()->get_input_cols(); }
   int get_output_length() const;
 
+  ImageDataFormat_t get_image_data_format () { return m_image_data_format; }
+
 private:
+
+  ImageDataFormat_t m_image_data_format;
 
   void load_weights(const std::string &input_fname);
   int m_layers_cnt; // number of layers

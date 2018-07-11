@@ -53,6 +53,35 @@ with open(args.output, 'w') as fout:
                         fout.write(str(W[i,j,k]) + '\n')
             fout.write(str(model.layers[ind].get_weights()[1]) + '\n')
 
+        if l['class_name'] == 'Conv2D':
+            #fout.write(str(l['config']['nb_filter']) + ' ' + str(l['config']['nb_col']) + ' ' + str(l['config']['nb_row']) + ' ')
+
+            #if 'batch_input_shape' in l['config']:
+            #    fout.write(str(l['config']['batch_input_shape'][1]) + ' ' + str(l['config']['batch_input_shape'][2]) + ' ' + str(l['config']['batch_input_shape'][3]))
+            #fout.write('\n')
+
+            W = model.layers[ind].get_weights()[0]
+            if args.verbose:
+                print W.shape
+            # Default Model Format : Hegiht, Width, Channels, Kernel
+            # fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) + ' ' + l['config']['padding'] + '\n')
+            # 
+            # for i in range(W.shape[0]):
+            #     for j in range(W.shape[1]):
+            #         for k in range(W.shape[2]):
+            #             fout.write(str(W[i,j,k]) + '\n')
+            # fout.write(str(model.layers[ind].get_weights()[1]) + '\n')
+
+            W = W.transpose(3, 2, 0, 1)
+
+            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) + ' ' + l['config']['padding'] + '\n')
+
+            for i in range(W.shape[0]):
+                for j in range(W.shape[1]):
+                    for k in range(W.shape[2]):
+                        fout.write(str(W[i,j,k]) + '\n')
+            fout.write(str(model.layers[ind].get_weights()[1]) + '\n')
+
         if l['class_name'] == 'Activation':
             fout.write(l['config']['activation'] + '\n')
         if l['class_name'] == 'MaxPooling2D':
