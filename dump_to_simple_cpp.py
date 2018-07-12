@@ -45,7 +45,8 @@ with open(args.output, 'w') as fout:
             W = model.layers[ind].get_weights()[0]
             if args.verbose:
                 print W.shape
-            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) + ' ' + l['config']['border_mode'] + '\n')
+            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) +
+                       ' ' + l['config']['border_mode'] + ' ' + l['config']['activation'] + '\n')
 
             for i in range(W.shape[0]):
                 for j in range(W.shape[1]):
@@ -65,7 +66,7 @@ with open(args.output, 'w') as fout:
                 print W.shape
             # Default Model Format : Hegiht, Width, Channels, Kernel
             # fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) + ' ' + l['config']['padding'] + '\n')
-            # 
+            #
             # for i in range(W.shape[0]):
             #     for j in range(W.shape[1]):
             #         for k in range(W.shape[2]):
@@ -74,7 +75,8 @@ with open(args.output, 'w') as fout:
 
             W = W.transpose(3, 2, 0, 1)
 
-            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) + ' ' + l['config']['padding'] + '\n')
+            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + str(W.shape[2]) + ' ' + str(W.shape[3]) +
+                       ' ' + l['config']['padding'] + ' ' + l['config']['activation'] + '\n')
 
             for i in range(W.shape[0]):
                 for j in range(W.shape[1]):
@@ -93,7 +95,7 @@ with open(args.output, 'w') as fout:
             W = model.layers[ind].get_weights()[0]
             if args.verbose:
                 print W.shape
-            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + '\n')
+            fout.write(str(W.shape[0]) + ' ' + str(W.shape[1]) + ' ' + l['config']['activation'] + '\n')
 
 
             for w in W:
