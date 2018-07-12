@@ -81,7 +81,7 @@ void keras::LayerConv2D::load_weights(std::ifstream &fin) {
   string tmp_str = "";
   float tmp_float;
   bool skip = false;
-  fin >> m_kernels_cnt >> m_depth >> m_rows >> m_cols >> m_border_mode;
+  fin >> m_kernels_cnt >> m_depth >> m_rows >> m_cols >> m_border_mode >> m_activation;
   if (m_border_mode == "[") { m_border_mode = "valid"; skip = true; }
 
   //cout << "LayerConv2D " << m_kernels_cnt << "x" << m_depth << "x" << m_rows <<
@@ -299,12 +299,6 @@ std::vector< std::vector<float> > keras::conv_single_depth_valid(
         for(unsigned int k2 = 0; k2 < k[0].size(); ++k2) {
           // sum += k[k1_size-k1-1][k2_size-k2-1] * im[i-st_x+k1][j-st_y+k2];
           sum += k[k1][k2] * im[i-st_x+k1][j-st_y+k2];
-
-          if (i == st_x && j == st_y)
-            printf("sum : k[%d][%d](%1.5f) * im[%d][%d](%1.5f) = %1.5f\n",
-                   k1_size-k1-1, k2_size-k2-1, k[k1_size-k1-1][k2_size-k2-1],
-                   i-st_x+k1,    j-st_y+k2,    im[i-st_x+k1][j-st_y+k2],
-                   sum);
         }
       }
       y[i-st_x][j-st_y] = sum;
@@ -342,12 +336,6 @@ std::vector< std::vector<float> > keras::conv_single_depth_same(
 
           // sum += k[k1_size-k1-1][k2_size-k2-1] * im[i-st_x+k1][j-st_y+k2];
           sum += k[k1][k2] * im[i-st_x+k1][j-st_y+k2];
-
-          if (debug == true && i == 0 && j == 0)
-            printf("sum : k[%d][%d](%1.5f) * im[%d][%d](%1.5f) = %1.5f\n",
-                   k1_size-k1-1, k2_size-k2-1, k[k1_size-k1-1][k2_size-k2-1],
-                   i-st_x+k1,    j-st_y+k2,    im[i-st_x+k1][j-st_y+k2],
-                   sum);
         }
       }
       y[i][j] = sum;
@@ -388,7 +376,6 @@ keras::DataChunk* keras::LayerConv2D::compute_output(keras::DataChunk* dc) {
           y_ret[j][x][y] += tmp_w[x][y];
         }
       }
-      // if (j == 0) { printf ("im.size = %d, y[0][0][0] = %f\n", im.size(), y_ret[0][0][0]); }
     }
 
 
@@ -397,12 +384,22 @@ keras::DataChunk* keras::LayerConv2D::compute_output(keras::DataChunk* dc) {
         y_ret[j][x][y] += m_bias[j];
       }
     }
-    // if (j == 0) { printf ("After biasing y[0][0][0] = %f\n", y_ret[0][0][0]); }
+  }
+
+  // Activation
+  if (m_activation == "relu") {
+    for(unsigned int j = 0; j < m_kernels.size(); ++j) { // loop over kernels
+      for(unsigned int x = 0; x < y_ret[0].size(); ++x) {
+        for(unsigned int y = 0; y < y_ret[0][0].size(); ++y) {
+          y_ret[j][x][y] = (y_ret[j][x][y] >= 0.0) ? y_ret[j][x][y] : 0.0;
+        }
+      }
+    }
   }
 
   keras::DataChunk *out = new keras::DataChunk2D();
   out->set_data(y_ret);
-  out->show_values();
+  // out->show_values();
 
   return out;
 }

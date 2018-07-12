@@ -184,6 +184,7 @@ public:
   virtual unsigned int get_output_units() const { return m_kernels_cnt; }
 
   std::string m_border_mode;
+  std::string m_activation;
   int m_kernels_cnt;
   int m_depth;
   int m_rows;
