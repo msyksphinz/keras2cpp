@@ -204,6 +204,7 @@ public:
   virtual unsigned int get_input_cols() const { return m_input_cnt; }
   virtual unsigned int get_output_units() const { return m_neurons; }
 
+  std::string m_activation_type;
   int m_input_cnt;
   int m_neurons;
 };

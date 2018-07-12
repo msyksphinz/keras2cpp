@@ -127,7 +127,7 @@ void keras::LayerMaxPooling::load_weights(std::ifstream &fin) {
 }
 
 void keras::LayerDense::load_weights(std::ifstream &fin) {
-  fin >> m_input_cnt >> m_neurons;
+  fin >> m_input_cnt >> m_neurons >> m_activation_type;
   float tmp_float;
   char tmp_char = ' ';
   for(int i = 0; i < m_input_cnt; ++i) {
@@ -434,6 +434,31 @@ keras::DataChunk* keras::LayerDense::compute_output(keras::DataChunk* dc) {
   }
   for (size_t i = 0; i < size; ++i) { // add biases
     y_ret[i] += m_bias[i];
+  }
+
+  if (m_activation_type == "relu") {
+    for (size_t i = 0; i < size; i++) {
+      y_ret[i] = (y_ret[i] > 0.0) ? y_ret[i] : 0.0;
+    }
+  } else if (m_activation_type == "softmax") {
+    float sum = 0.0;
+    for(unsigned int k = 0; k < size; ++k) {
+      y_ret[k] = exp(y_ret[k]);
+      sum += y_ret[k];
+    }
+    for(unsigned int k = 0; k < size; ++k) {
+      y_ret[k] /= sum;
+    }
+  } else if(m_activation_type == "sigmoid") {
+    for(unsigned int k = 0; k < size; ++k) {
+      y_ret[k] = 1/(1+exp(-y_ret[k]));
+    }
+  } else if(m_activation_type == "tanh") {
+    for(unsigned int k = 0; k < size; ++k) {
+      y_ret[k] = tanh(y_ret[k]);
+    }
+  } else {
+    keras::missing_activation_impl(m_activation_type);
   }
 
   // out->show_values();
